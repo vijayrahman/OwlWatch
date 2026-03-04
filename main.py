@@ -878,3 +878,83 @@ def get_default_config() -> Dict[str, Any]:
         "treasury": OWL_DEFAULT_TREASURY,
         "seed_whitelist": True,
         "mock_prices": {},
+    }
+
+
+# -----------------------------------------------------------------------------
+# Validation
+# ------------------------------------------------------------------------------
+
+def validate_config_keys(config: Dict[str, Any]) -> List[str]:
+    required = []
+    if "guardian" in config and len(config.get("guardian", "")) != 42:
+        required.append("guardian must be 40 hex with 0x")
+    return required
+
+
+# -----------------------------------------------------------------------------
+# Run single trigger and persist
+# ------------------------------------------------------------------------------
+
+def run_trigger_and_save(engine: SpringaEngine, position_id: str) -> Optional[SellOrder]:
+    order = engine.check_and_trigger(position_id)
+    if order:
+        persist_engine(engine)
+    return order
+
+
+# -----------------------------------------------------------------------------
+# Run scan and persist
+# ------------------------------------------------------------------------------
+
+def run_scan_and_save(engine: SpringaEngine, caller: str) -> List[SellOrder]:
+    orders = engine.scan_all_positions(caller)
+    if orders:
+        persist_engine(engine)
+    return orders
+
+
+# -----------------------------------------------------------------------------
+# Format position one-liner
+# ------------------------------------------------------------------------------
+
+def format_position_line(p: Position, current_price: Optional[int] = None) -> str:
+    drop = ""
+    if current_price is not None and p.high_water_mark_wei > 0:
+        drop = f" drop={compute_drop_bps(p.high_water_mark_wei, current_price)}bps"
+    return f"{p.position_id[:12]}... {p.asset_id} {status_display(p.status)}{drop}"
+
+
+# -----------------------------------------------------------------------------
+# List positions by asset
+# ------------------------------------------------------------------------------
+
+def cmd_by_asset(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: byasset <asset_id>")
+        return
+    from Springa import filter_positions_by_asset
+    positions = filter_positions_by_asset(engine.list_positions(), args[1])
+    print(positions_table(positions, engine._price_feed))
+
+
+# -----------------------------------------------------------------------------
+# Counts
+# ------------------------------------------------------------------------------
+
+def cmd_counts(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    positions = engine.list_positions()
+    active = sum(1 for p in positions if p.status == SPRG_STATUS_ACTIVE)
+    sold = sum(1 for p in positions if p.status == SPRG_STATUS_SOLD)
+    disabled = sum(1 for p in positions if p.status == 4)
+    print(f"Total: {len(positions)} | Active: {active} | Sold: {sold} | Disabled: {disabled}")
+
+
+# -----------------------------------------------------------------------------
+# Config show path
