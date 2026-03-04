@@ -158,3 +158,83 @@ def cmd_position_create(args: List[str], engine: Optional[SpringaEngine]) -> Non
         print("Springa not available.")
         return
     if len(args) < 5:
+        print("Usage: position create <owner> <asset_id> <amount_wei> <initial_price_wei> [drop_bps] [floor_bps]")
+        return
+    owner = to_checksum_address(args[1])
+    asset_id = args[2]
+    amount_wei = parse_wei(args[3])
+    initial_price_wei = parse_wei(args[4])
+    drop_bps = int(args[5]) if len(args) > 5 else 2000
+    floor_bps = int(args[6]) if len(args) > 6 else 500
+    try:
+        pos = engine.create_position(owner, asset_id, amount_wei, initial_price_wei, drop_bps=drop_bps, floor_bps=floor_bps)
+        persist_engine(engine)
+        print(position_summary(pos))
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+def cmd_position_list(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    owner = to_checksum_address(args[1]) if len(args) > 1 else None
+    positions = engine.list_positions(owner=owner)
+    print(positions_table(positions, engine._price_feed))
+
+
+def cmd_position_get(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: position get <position_id>")
+        return
+    pos = engine.get_position(args[1])
+    if not pos:
+        print("Position not found.")
+        return
+    report = position_report(pos, engine._price_feed)
+    print(json.dumps(report, indent=2))
+
+
+# -----------------------------------------------------------------------------
+# CLI: trigger / scan
+# ------------------------------------------------------------------------------
+
+def cmd_trigger(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: trigger <position_id>")
+        return
+    order = engine.check_and_trigger(args[1])
+    if order:
+        persist_engine(engine)
+        print("Triggered:", order_summary(order))
+    else:
+        print("No trigger.")
+
+
+def cmd_scan(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    caller = to_checksum_address(args[1]) if len(args) > 1 else engine.keeper
+    try:
+        orders = engine.scan_all_positions(caller)
+        persist_engine(engine)
+        for o in orders:
+            print(order_summary(o))
+        print(f"Executed {len(orders)} orders.")
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+# -----------------------------------------------------------------------------
+# CLI: stats / health
+# ------------------------------------------------------------------------------
+
+def cmd_stats(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
