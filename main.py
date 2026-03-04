@@ -478,3 +478,83 @@ def cmd_help() -> None:
     print("  help")
 
 
+# -----------------------------------------------------------------------------
+# Report generation
+# ------------------------------------------------------------------------------
+
+def generate_report(engine: SpringaEngine) -> Dict[str, Any]:
+    positions = engine.list_positions()
+    orders = engine.list_orders()
+    active = filter_positions_active(positions)
+    stats = engine_stats(engine)
+    return {
+        "generated_at": time.time(),
+        "stats": stats,
+        "positions_count": len(positions),
+        "orders_count": len(orders),
+        "active_count": len(active),
+        "config": engine.get_config(),
+    }
+
+
+def cmd_report(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    path = args[1] if len(args) > 1 else None
+    report = generate_report(engine)
+    if path:
+        with open(path, "w") as f:
+            json.dump(report, f, indent=2)
+        print(f"Report saved to {path}")
+    else:
+        print(json.dumps(report, indent=2))
+
+
+# -----------------------------------------------------------------------------
+# Update high water mark
+# ------------------------------------------------------------------------------
+
+def cmd_update_hwm(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 4:
+        print("Usage: updatehwm <position_id> <caller> <new_price_wei>")
+        return
+    try:
+        pos = engine.update_high_water_mark(args[1], to_checksum_address(args[2]), parse_wei(args[3]))
+        persist_engine(engine)
+        print(position_summary(pos))
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+# -----------------------------------------------------------------------------
+# Batch trigger check
+# ------------------------------------------------------------------------------
+
+def cmd_batch_trigger(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: batchtrigger <position_id1> [position_id2 ...]")
+        return
+    for pid in args[1:]:
+        order = engine.check_and_trigger(pid)
+        if order:
+            print("Triggered:", order_summary(order))
+    persist_engine(engine)
+
+
+# -----------------------------------------------------------------------------
+# Audit snapshot
+# ------------------------------------------------------------------------------
+
+def cmd_audit(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    try:
+        from Springa import audit_snapshot
