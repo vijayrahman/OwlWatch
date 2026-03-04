@@ -1038,3 +1038,83 @@ def cmd_ordercount(args: List[str], engine: Optional[SpringaEngine]) -> None:
         print("Springa not available.")
         return
     position_id = args[1] if len(args) > 1 else None
+    orders = engine.list_orders(position_id=position_id)
+    print(len(orders))
+
+
+# -----------------------------------------------------------------------------
+# Table format options (stub for future)
+# ------------------------------------------------------------------------------
+
+def table_format_positions(positions: List[Position], feed: Optional[Any] = None, style: str = "table") -> str:
+    if style == "csv":
+        lines = ["position_id,owner,asset_id,amount_wei,status"]
+        for p in positions:
+            lines.append(f"{p.position_id},{p.owner},{p.asset_id},{p.amount_wei},{status_display(p.status)}")
+        return "\n".join(lines)
+    return positions_table(positions, feed)
+
+
+# -----------------------------------------------------------------------------
+# Export state path
+# ------------------------------------------------------------------------------
+
+def default_export_path() -> Path:
+    return get_config_dir() / f"export_{int(time.time())}.json"
+
+
+# -----------------------------------------------------------------------------
+# Load state from path
+# ------------------------------------------------------------------------------
+
+def load_state_from_path(engine: SpringaEngine, path: Path) -> None:
+    if not path.exists():
+        return
+    with open(path) as f:
+        engine.load_state(json.load(f))
+
+
+# -----------------------------------------------------------------------------
+# Backup state
+# ------------------------------------------------------------------------------
+
+def cmd_backup(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    path = Path(args[1]) if len(args) > 1 else default_export_path()
+    save_engine_state(engine, path)
+    print(f"Backup: {path}")
+
+
+# -----------------------------------------------------------------------------
+# Restore state
+# ------------------------------------------------------------------------------
+
+def cmd_restore(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: restore <path>")
+        return
+    load_engine_state(engine, args[1])
+    persist_engine(engine)
+    print("Restored.")
+
+
+# -----------------------------------------------------------------------------
+# Version info
+# ------------------------------------------------------------------------------
+
+def get_owl_version() -> str:
+    return OWL_VERSION
+
+
+def get_springa_version() -> str:
+    try:
+        from Springa import SPRG_VERSION
+        return SPRG_VERSION
+    except ImportError:
+        return "N/A"
+
