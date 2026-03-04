@@ -638,3 +638,83 @@ def cmd_dropbps(args: List[str]) -> None:
         print("Usage: dropbps <high_wei> <current_wei>")
         return
     high = parse_wei(args[1])
+    current = parse_wei(args[2])
+    bps = compute_drop_bps(high, current)
+    print(f"Drop: {bps} bps ({100 * bps / 10000:.2f}%)")
+
+
+# -----------------------------------------------------------------------------
+# Floor price calculator
+# ------------------------------------------------------------------------------
+
+def cmd_floorprice(args: List[str]) -> None:
+    if len(args) < 3:
+        print("Usage: floorprice <high_wei> <floor_bps>")
+        return
+    high = parse_wei(args[1])
+    floor_bps = int(args[2])
+    floor_wei = compute_floor_price_wei(high, floor_bps)
+    print(f"Floor: {floor_wei} wei ({format_eth(floor_wei)})")
+
+
+# -----------------------------------------------------------------------------
+# Reset state (clear positions/orders in memory and optionally save)
+# ------------------------------------------------------------------------------
+
+def cmd_reset(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    confirm = args[1] if len(args) > 1 else ""
+    if confirm != "yes":
+        print("Run: reset yes  to clear state.")
+        return
+    engine._positions.clear()
+    engine._sell_orders.clear()
+    persist_engine(engine)
+    print("State cleared.")
+
+
+# -----------------------------------------------------------------------------
+# List active only
+# ------------------------------------------------------------------------------
+
+def cmd_active(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    positions = filter_positions_active(engine.list_positions())
+    print(positions_table(positions, engine._price_feed))
+
+
+# -----------------------------------------------------------------------------
+# History log (append-only)
+# ------------------------------------------------------------------------------
+
+def get_history_path() -> Path:
+    return Path.home() / OWL_CONFIG_DIR / "history.jsonl"
+
+
+def log_action(action: str, data: Dict[str, Any]) -> None:
+    path = get_history_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "a") as f:
+        f.write(json.dumps({"t": time.time(), "action": action, **data}) + "\n")
+
+
+# -----------------------------------------------------------------------------
+# Format wei for display
+# ------------------------------------------------------------------------------
+
+def format_wei_short(wei: int) -> str:
+    if wei >= 1e18:
+        return f"{wei / 1e18:.4f} ETH"
+    if wei >= 1e9:
+        return f"{wei / 1e9:.2f} Gwei"
+    return str(wei) + " wei"
+
+
+# -----------------------------------------------------------------------------
+# Position CSV export
+# ------------------------------------------------------------------------------
+
