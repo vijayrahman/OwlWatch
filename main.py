@@ -558,3 +558,83 @@ def cmd_audit(args: List[str], engine: Optional[SpringaEngine]) -> None:
         return
     try:
         from Springa import audit_snapshot
+        snap = audit_snapshot(engine)
+        path = args[1] if len(args) > 1 else None
+        if path:
+            with open(path, "w") as f:
+                json.dump(snap, f, indent=2)
+            print(f"Audit saved to {path}")
+        else:
+            print(json.dumps(snap, indent=2))
+    except ImportError:
+        print("audit_snapshot not available.")
+
+
+# -----------------------------------------------------------------------------
+# Watch loop (periodic scan)
+# ------------------------------------------------------------------------------
+
+def cmd_watch(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    interval = float(args[1]) if len(args) > 1 else 60.0
+    caller = to_checksum_address(args[2]) if len(args) > 2 else engine.keeper
+    print(f"Watching every {interval}s (keeper={truncate_address(caller)})")
+    try:
+        while True:
+            orders = engine.scan_all_positions(caller)
+            if orders:
+                for o in orders:
+                    print(f"[{time.strftime('%H:%M:%S')}] {order_summary(o)}")
+                persist_engine(engine)
+            time.sleep(interval)
+    except KeyboardInterrupt:
+        print("Stopped.")
+
+
+# -----------------------------------------------------------------------------
+# Address validation
+# ------------------------------------------------------------------------------
+
+def cmd_validate_address(args: List[str]) -> None:
+    if len(args) < 1:
+        print("Usage: validateaddress <address>")
+        return
+    try:
+        from Springa import validate_address
+        ok = validate_address(args[0])
+        print("Valid" if ok else "Invalid")
+        if ok:
+            print(to_checksum_address(args[0]))
+    except Exception:
+        print("Invalid")
+
+
+# -----------------------------------------------------------------------------
+# Info / about
+# ------------------------------------------------------------------------------
+
+def cmd_info(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    print(json.dumps(engine.get_config(), indent=2))
+
+
+def cmd_about() -> None:
+    print(f"{OWL_APP_NAME} v{OWL_VERSION}")
+    print("Monitor price drop protection and autosell (Springa engine).")
+    print("Config:", get_config_path())
+    print("State:", get_state_path())
+
+
+# -----------------------------------------------------------------------------
+# Drop BPS calculator
+# ------------------------------------------------------------------------------
+
+def cmd_dropbps(args: List[str]) -> None:
+    if len(args) < 3:
+        print("Usage: dropbps <high_wei> <current_wei>")
+        return
+    high = parse_wei(args[1])
