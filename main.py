@@ -798,3 +798,83 @@ def cmd_cooldown(args: List[str], engine: Optional[SpringaEngine]) -> None:
         print("Usage: cooldown <position_id>")
         return
     pos = engine.get_position(args[1])
+    if not pos:
+        print("Position not found.")
+        return
+    try:
+        from Springa import cooldown_remaining_sec, is_in_cooldown
+        rem = cooldown_remaining_sec(pos)
+        in_cd = is_in_cooldown(pos)
+        print(f"In cooldown: {in_cd}")
+        print(f"Remaining: {rem:.0f} sec")
+    except ImportError:
+        print("Cooldown helpers not available.")
+
+
+# -----------------------------------------------------------------------------
+# Default config init
+# ------------------------------------------------------------------------------
+
+def cmd_init(args: List[str]) -> None:
+    path = get_config_path()
+    if path.exists():
+        print("Config already exists.")
+        return
+    default = {
+        "guardian": OWL_DEFAULT_GUARDIAN,
+        "treasury": OWL_DEFAULT_TREASURY,
+        "seed_whitelist": True,
+        "mock_prices": {},
+    }
+    save_config(default)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    print("Initialized config at", path)
+
+
+# -----------------------------------------------------------------------------
+# List sold positions
+# ------------------------------------------------------------------------------
+
+def cmd_sold(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    positions = [p for p in engine.list_positions() if p.status == SPRG_STATUS_SOLD]
+    print(positions_table(positions, engine._price_feed))
+
+
+# -----------------------------------------------------------------------------
+# Summary one-liner
+# ------------------------------------------------------------------------------
+
+def cmd_summary(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    s = engine_stats(engine)
+    print(f"Positions: {s['position_count']} (active: {s['active_count']}, sold: {s['sold_count']})")
+    print(f"Orders: {s['order_count']} | Total sold wei: {s['total_sold_wei']}")
+
+
+# -----------------------------------------------------------------------------
+# Paths and dirs
+# ------------------------------------------------------------------------------
+
+def get_config_dir() -> Path:
+    return Path.home() / OWL_CONFIG_DIR
+
+
+def ensure_dirs() -> None:
+    get_config_dir().mkdir(parents=True, exist_ok=True)
+
+
+# -----------------------------------------------------------------------------
+# Config defaults
+# ------------------------------------------------------------------------------
+
+def get_default_config() -> Dict[str, Any]:
+    return {
+        "guardian": OWL_DEFAULT_GUARDIAN,
+        "treasury": OWL_DEFAULT_TREASURY,
+        "seed_whitelist": True,
+        "mock_prices": {},
