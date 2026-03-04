@@ -958,3 +958,83 @@ def cmd_counts(args: List[str], engine: Optional[SpringaEngine]) -> None:
 
 # -----------------------------------------------------------------------------
 # Config show path
+# ------------------------------------------------------------------------------
+
+def cmd_paths(args: List[str]) -> None:
+    print("config:", get_config_path())
+    print("state:", get_state_path())
+    print("history:", get_history_path())
+    print("dir:", get_config_dir())
+
+
+# -----------------------------------------------------------------------------
+# Mock prices from config
+# ------------------------------------------------------------------------------
+
+def set_mock_prices_in_config(prices: Dict[str, int]) -> None:
+    config = load_config()
+    config["mock_prices"] = prices
+    save_config(config)
+
+
+def cmd_setprices(args: List[str]) -> None:
+    if len(args) < 3:
+        print("Usage: setprices <asset_id> <price_wei> [asset_id2 price2 ...]")
+        return
+    config = load_config()
+    prices = dict(config.get("mock_prices", {}))
+    i = 1
+    while i + 1 <= len(args):
+        prices[args[i]] = parse_wei(args[i + 1])
+        i += 2
+    config["mock_prices"] = prices
+    save_config(config)
+    print("Mock prices updated.")
+
+
+# -----------------------------------------------------------------------------
+# Guardian / keeper check
+# ------------------------------------------------------------------------------
+
+def cmd_whoami(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    addr = to_checksum_address(args[1]) if len(args) > 1 else None
+    if not addr:
+        print("Usage: whoami <address>")
+        return
+    try:
+        from Springa import is_guardian, is_keeper
+        print("guardian:", is_guardian(engine, addr))
+        print("keeper:", is_keeper(engine, addr))
+    except ImportError:
+        print("is_guardian/is_keeper not available.")
+
+
+# -----------------------------------------------------------------------------
+# Position IDs for owner
+# ------------------------------------------------------------------------------
+
+def cmd_mypositions(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: mypositions <owner_address>")
+        return
+    owner = to_checksum_address(args[1])
+    positions = engine.list_positions(owner=owner)
+    for p in positions:
+        print(p.position_id)
+
+
+# -----------------------------------------------------------------------------
+# Order count
+# ------------------------------------------------------------------------------
+
+def cmd_ordercount(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    position_id = args[1] if len(args) > 1 else None
