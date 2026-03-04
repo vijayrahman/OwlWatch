@@ -398,3 +398,83 @@ def cmd_preset(args: List[str], engine: Optional[SpringaEngine]) -> None:
     if len(args) < 6:
         print("Usage: preset <conservative|moderate|aggressive> <owner> <asset_id> <amount_wei> <initial_price_wei>")
         return
+    preset_name = args[1].lower()
+    owner = to_checksum_address(args[2])
+    asset_id = args[3]
+    amount_wei = parse_wei(args[4])
+    initial_price_wei = parse_wei(args[5])
+    try:
+        pos = create_position_with_preset(engine, owner, asset_id, amount_wei, initial_price_wei, preset=preset_name)
+        persist_engine(engine)
+        print(position_summary(pos))
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+# -----------------------------------------------------------------------------
+# CLI: version / help
+# ------------------------------------------------------------------------------
+
+def cmd_version() -> None:
+    print(f"{OWL_APP_NAME} {OWL_VERSION} (Springa {SPRG_VERSION if 'SPRG_VERSION' in dir() else 'N/A'})")
+
+
+def cmd_help() -> None:
+    print("OwlWatch — Price drop protection & autosell monitor")
+    print("  config [set <key> <value> | get <key>]")
+    print("  position create <owner> <asset_id> <amount_wei> <initial_price_wei> [drop_bps] [floor_bps]")
+    print("  position list [owner]")
+    print("  position get <position_id>")
+    print("  trigger <position_id>")
+    print("  scan [keeper_address]")
+    print("  stats")
+    print("  health")
+    print("  orders [position_id]")
+    print("  whitelist [add|remove <asset_id>]")
+    print("  price get <asset_id> | price set <asset_id> <price_wei>")
+    print("  disable <position_id> <caller>")
+    print("  enable <position_id> <caller>")
+    print("  near [within_bps]")
+    print("  export [path]")
+    print("  import <path>")
+    print("  preset <conservative|moderate|aggressive> <owner> <asset_id> <amount_wei> <initial_price_wei>")
+    print("  report [path]")
+    print("  updatehwm <position_id> <caller> <new_price_wei>")
+    print("  batchtrigger <position_id1> [position_id2 ...]")
+    print("  audit [path]")
+    print("  watch [interval_sec] [keeper_address]")
+    print("  validateaddress <address>")
+    print("  info")
+    print("  about")
+    print("  dropbps <high_wei> <current_wei>")
+    print("  floorprice <high_wei> <floor_bps>")
+    print("  reset yes")
+    print("  active")
+    print("  csv [path]")
+    print("  simulate <position_id>")
+    print("  refreshhwm [caller]")
+    print("  cooldown <position_id>")
+    print("  init")
+    print("  sold")
+    print("  summary")
+    print("  byasset <asset_id>")
+    print("  counts")
+    print("  paths")
+    print("  setprices <asset_id> <price_wei> [...]")
+    print("  whoami <address>")
+    print("  mypositions <owner_address>")
+    print("  ordercount [position_id]")
+    print("  backup [path]")
+    print("  restore <path>")
+    print("  healthshort")
+    print("  assets")
+    print("  status <position_id>")
+    print("  positionjson <position_id>")
+    print("  presets")
+    print("  configdump")
+    print("  engineconfig")
+    print("  appinfo")
+    print("  version")
+    print("  help")
+
+
