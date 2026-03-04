@@ -238,3 +238,83 @@ def cmd_scan(args: List[str], engine: Optional[SpringaEngine]) -> None:
 
 def cmd_stats(args: List[str], engine: Optional[SpringaEngine]) -> None:
     if not engine:
+        print("Springa not available.")
+        return
+    s = engine_stats(engine)
+    print(json.dumps(s, indent=2))
+
+
+def cmd_health(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    h = engine_health(engine)
+    print(json.dumps(h, indent=2))
+
+
+# -----------------------------------------------------------------------------
+# CLI: orders
+# ------------------------------------------------------------------------------
+
+def cmd_orders(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    position_id = args[1] if len(args) > 1 else None
+    orders = engine.list_orders(position_id=position_id)
+    print(orders_table(orders))
+
+
+# -----------------------------------------------------------------------------
+# CLI: whitelist
+# ------------------------------------------------------------------------------
+
+def cmd_whitelist(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if not args:
+        print(list(engine._whitelist))
+        return
+    if args[0] == "add" and len(args) > 1:
+        engine.add_to_whitelist(args[1])
+        persist_engine(engine)
+        print(f"Added {args[1]}")
+    elif args[0] == "remove" and len(args) > 1:
+        engine.remove_from_whitelist(args[1])
+        persist_engine(engine)
+        print(f"Removed {args[1]}")
+
+
+# -----------------------------------------------------------------------------
+# CLI: price (mock)
+# ------------------------------------------------------------------------------
+
+def cmd_price(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: price get <asset_id> | price set <asset_id> <price_wei>")
+        return
+    if args[0] == "get":
+        snap = engine._price_feed.get_price(args[1])
+        if snap:
+            print(f"{args[1]}: {snap.price_wei} wei")
+        else:
+            print("No price.")
+    elif args[0] == "set" and len(args) >= 4:
+        if isinstance(engine._price_feed, MockPriceFeed):
+            engine._price_feed.set_price(args[1], parse_wei(args[2]))
+            persist_engine(engine)
+            print(f"Set {args[1]} = {args[2]}")
+        else:
+            print("Only mock feed supports set.")
+
+
+# -----------------------------------------------------------------------------
+# CLI: disable / enable
+# ------------------------------------------------------------------------------
+
+def cmd_disable(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
