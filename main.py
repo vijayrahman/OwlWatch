@@ -78,3 +78,83 @@ OWL_DEFAULT_GUARDIAN = SPRG_GUARDIAN_ADDRESS if "SPRG_GUARDIAN_ADDRESS" in dir()
 OWL_DEFAULT_TREASURY = SPRG_TREASURY_ADDRESS if "SPRG_TREASURY_ADDRESS" in dir() else "0x3D6f9A2c5E8b1D4e7F0a3C6d9B2e5F8a1C4d7E0"
 
 
+# -----------------------------------------------------------------------------
+# Config
+# ------------------------------------------------------------------------------
+
+def get_config_path() -> Path:
+    return Path.home() / OWL_CONFIG_DIR / OWL_CONFIG_FILE
+
+
+def get_state_path() -> Path:
+    return Path.home() / OWL_CONFIG_DIR / OWL_STATE_FILE
+
+
+def load_config() -> Dict[str, Any]:
+    path = get_config_path()
+    if not path.exists():
+        return {}
+    with open(path) as f:
+        return json.load(f)
+
+
+def save_config(config: Dict[str, Any]) -> None:
+    path = get_config_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w") as f:
+        json.dump(config, f, indent=2)
+
+
+# -----------------------------------------------------------------------------
+# Engine factory and state
+# ------------------------------------------------------------------------------
+
+def create_engine_from_config() -> Optional[SpringaEngine]:
+    if SpringaEngine is None:
+        return None
+    config = load_config()
+    guardian = config.get("guardian", OWL_DEFAULT_GUARDIAN)
+    treasury = config.get("treasury", OWL_DEFAULT_TREASURY)
+    prices = config.get("mock_prices", {})
+    feed = MockPriceFeed(prices=prices) if prices else None
+    engine = create_default_engine(guardian=guardian, treasury=treasury, price_feed=feed)
+    if config.get("seed_whitelist", True) and seed_default_whitelist:
+        seed_default_whitelist(engine)
+    state_path = get_state_path()
+    if state_path.exists():
+        load_engine_state(engine, state_path)
+    return engine
+
+
+def persist_engine(engine: SpringaEngine) -> None:
+    save_engine_state(engine, get_state_path())
+
+
+# -----------------------------------------------------------------------------
+# CLI: config
+# ------------------------------------------------------------------------------
+
+def cmd_config(args: List[str]) -> None:
+    if not args:
+        config = load_config()
+        print(json.dumps(config, indent=2))
+        return
+    if args[0] == "set" and len(args) >= 3:
+        config = load_config()
+        config[args[1]] = args[2]
+        save_config(config)
+        print(f"Set {args[1]} = {args[2]}")
+    elif args[0] == "get" and len(args) >= 2:
+        config = load_config()
+        print(config.get(args[1], ""))
+
+
+# -----------------------------------------------------------------------------
+# CLI: position create / list / get
+# ------------------------------------------------------------------------------
+
+def cmd_position_create(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 5:
