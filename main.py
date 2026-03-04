@@ -318,3 +318,83 @@ def cmd_price(args: List[str], engine: Optional[SpringaEngine]) -> None:
 
 def cmd_disable(args: List[str], engine: Optional[SpringaEngine]) -> None:
     if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 3:
+        print("Usage: disable <position_id> <caller_address>")
+        return
+    try:
+        pos = engine.disable_position(args[1], to_checksum_address(args[2]))
+        persist_engine(engine)
+        print("Disabled:", position_summary(pos))
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+def cmd_enable(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 3:
+        print("Usage: enable <position_id> <caller_address>")
+        return
+    try:
+        pos = engine.enable_position(args[1], to_checksum_address(args[2]))
+        persist_engine(engine)
+        print("Enabled:", position_summary(pos))
+    except Exception as e:
+        print(f"Error: {e}")
+
+
+# -----------------------------------------------------------------------------
+# CLI: near (positions near trigger)
+# ------------------------------------------------------------------------------
+
+def cmd_near(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    within_bps = int(args[1]) if len(args) > 1 else 500
+    positions = filter_positions_near_trigger(engine.list_positions(), engine._price_feed, within_bps=within_bps)
+    print(positions_table(positions, engine._price_feed))
+
+
+# -----------------------------------------------------------------------------
+# CLI: export / import
+# ------------------------------------------------------------------------------
+
+def cmd_export(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    path = args[1] if len(args) > 1 else None
+    if not path:
+        print(json.dumps(engine.export_state(), indent=2))
+        return
+    save_engine_state(engine, path)
+    print(f"Exported to {path}")
+
+
+def cmd_import(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: import <path>")
+        return
+    load_engine_state(engine, args[1])
+    persist_engine(engine)
+    print("Imported.")
+
+
+# -----------------------------------------------------------------------------
+# CLI: preset create
+# ------------------------------------------------------------------------------
+
+def cmd_preset(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 6:
+        print("Usage: preset <conservative|moderate|aggressive> <owner> <asset_id> <amount_wei> <initial_price_wei>")
+        return
