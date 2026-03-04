@@ -718,3 +718,83 @@ def format_wei_short(wei: int) -> str:
 # Position CSV export
 # ------------------------------------------------------------------------------
 
+def export_positions_csv(engine: SpringaEngine, path: Optional[Path] = None) -> str:
+    positions = engine.list_positions()
+    lines = ["position_id,owner,asset_id,amount_wei,high_water_mark_wei,floor_price_wei,drop_bps,floor_bps,status"]
+    for p in positions:
+        lines.append(f"{p.position_id},{p.owner},{p.asset_id},{p.amount_wei},{p.high_water_mark_wei},{p.floor_price_wei},{p.drop_bps},{p.floor_bps},{status_display(p.status)}")
+    csv = "\n".join(lines)
+    if path:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "w") as f:
+            f.write(csv)
+    return csv
+
+
+def cmd_csv(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    path = Path(args[1]) if len(args) > 1 else None
+    csv = export_positions_csv(engine, path)
+    if not path:
+        print(csv)
+
+
+# -----------------------------------------------------------------------------
+# Simulate trigger (dry run)
+# ------------------------------------------------------------------------------
+
+def cmd_simulate(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: simulate <position_id>")
+        return
+    pos = engine.get_position(args[1])
+    if not pos:
+        print("Position not found.")
+        return
+    snap = engine._price_feed.get_price(pos.asset_id)
+    if not snap:
+        print("No price for asset.")
+        return
+    from Springa import would_trigger_at_price
+    would = would_trigger_at_price(pos, snap.price_wei)
+    drop_bps = compute_drop_bps(pos.high_water_mark_wei, snap.price_wei)
+    print(f"Current price: {snap.price_wei} wei")
+    print(f"Drop from HWM: {drop_bps} bps")
+    print(f"Would trigger: {would}")
+
+
+# -----------------------------------------------------------------------------
+# Refresh HWM from feed
+# ------------------------------------------------------------------------------
+
+def cmd_refresh_hwm(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    try:
+        from Springa import refresh_high_water_marks_from_feed
+        caller = to_checksum_address(args[1]) if len(args) > 1 else engine.guardian
+        n = refresh_high_water_marks_from_feed(engine, caller)
+        persist_engine(engine)
+        print(f"Updated {n} positions.")
+    except ImportError:
+        print("refresh_high_water_marks_from_feed not available.")
+
+
+# -----------------------------------------------------------------------------
+# Cooldown status
+# ------------------------------------------------------------------------------
+
+def cmd_cooldown(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: cooldown <position_id>")
+        return
+    pos = engine.get_position(args[1])
