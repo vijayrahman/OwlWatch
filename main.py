@@ -1358,3 +1358,74 @@ def main() -> None:
         cmd_watch(args, engine)
     elif cmd == "validateaddress":
         cmd_validate_address(args)
+    elif cmd == "info":
+        cmd_info(args, engine)
+    elif cmd == "about":
+        cmd_about()
+    elif cmd == "dropbps":
+        cmd_dropbps(args)
+    elif cmd == "floorprice":
+        cmd_floorprice(args)
+    elif cmd == "reset":
+        cmd_reset(args, engine)
+    elif cmd == "active":
+        cmd_active(args, engine)
+    elif cmd == "csv":
+        cmd_csv(args, engine)
+    elif cmd == "simulate":
+        cmd_simulate(args, engine)
+    elif cmd == "refreshhwm":
+        cmd_refresh_hwm(args, engine)
+    elif cmd == "cooldown":
+        cmd_cooldown(args, engine)
+    elif cmd == "init":
+        cmd_init(args)
+    elif cmd == "sold":
+        cmd_sold(args, engine)
+    elif cmd == "summary":
+        cmd_summary(args, engine)
+    elif cmd == "byasset":
+        cmd_by_asset(args, engine)
+    elif cmd == "counts":
+        cmd_counts(args, engine)
+    elif cmd == "paths":
+        cmd_paths(args)
+    elif cmd == "setprices":
+        cmd_setprices(args)
+    elif cmd == "whoami":
+        cmd_whoami(args, engine)
+    elif cmd == "mypositions":
+        cmd_mypositions(args, engine)
+    elif cmd == "ordercount":
+        cmd_ordercount(args, engine)
+    elif cmd == "backup":
+        cmd_backup(args, engine)
+    elif cmd == "restore":
+        cmd_restore(args, engine)
+    elif cmd == "healthshort":
+        cmd_health_short(args, engine)
+    elif cmd == "assets":
+        cmd_assets(args, engine)
+    elif cmd == "status":
+        cmd_status(args, engine)
+    elif cmd == "positionjson":
+        cmd_position_json(args, engine)
+    elif cmd == "presets":
+        cmd_presets(args)
+    elif cmd == "configdump":
+        cmd_config_dump(args)
+    elif cmd == "engineconfig":
+        cmd_engineconfig(args, engine)
+    elif cmd == "appinfo":
+        cmd_appinfo(args)
+    elif cmd == "version":
+        cmd_version()
+    elif cmd in ("help", "-h", "--help"):
+        cmd_help()
+    else:
+        print(f"Unknown command: {cmd}")
+        cmd_help()
+
+
+if __name__ == "__main__":
+    _main()
