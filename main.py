@@ -1118,3 +1118,83 @@ def get_springa_version() -> str:
     except ImportError:
         return "N/A"
 
+
+# -----------------------------------------------------------------------------
+# Health summary one-liner
+# ------------------------------------------------------------------------------
+
+def cmd_health_short(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    h = engine_health(engine)
+    print("OK" if h.get("ok") else "Errors: " + str(h.get("errors", [])))
+
+
+# -----------------------------------------------------------------------------
+# List assets in whitelist
+# ------------------------------------------------------------------------------
+
+def cmd_assets(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    wl = list(engine._whitelist)
+    if not wl:
+        print("(no whitelist or empty)")
+        return
+    for a in sorted(wl):
+        print(a)
+
+
+# -----------------------------------------------------------------------------
+# Position status only
+# ------------------------------------------------------------------------------
+
+def cmd_status(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: status <position_id>")
+        return
+    pos = engine.get_position(args[1])
+    if not pos:
+        print("Not found.")
+        return
+    print(status_display(pos.status))
+
+
+# -----------------------------------------------------------------------------
+# JSON export of single position
+# ------------------------------------------------------------------------------
+
+def cmd_position_json(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    if len(args) < 2:
+        print("Usage: positionjson <position_id>")
+        return
+    pos = engine.get_position(args[1])
+    if not pos:
+        print("Not found.")
+        return
+    report = position_report(pos, engine._price_feed)
+    print(json.dumps(report, indent=2))
+
+
+# -----------------------------------------------------------------------------
+# Preset info
+# ------------------------------------------------------------------------------
+
+def cmd_presets(args: List[str]) -> None:
+    print("conservative: drop_bps=1000, floor_bps=800")
+    print("moderate: drop_bps=2000, floor_bps=500")
+    print("aggressive: drop_bps=3500, floor_bps=300")
+
+
+# -----------------------------------------------------------------------------
+# Config dump
+# ------------------------------------------------------------------------------
+
