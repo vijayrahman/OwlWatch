@@ -1198,3 +1198,83 @@ def cmd_presets(args: List[str]) -> None:
 # Config dump
 # ------------------------------------------------------------------------------
 
+def cmd_config_dump(args: List[str]) -> None:
+    c = load_config()
+    print(json.dumps(c, indent=2))
+
+
+# -----------------------------------------------------------------------------
+# Engine config (from engine)
+# ------------------------------------------------------------------------------
+
+def cmd_engineconfig(args: List[str], engine: Optional[SpringaEngine]) -> None:
+    if not engine:
+        print("Springa not available.")
+        return
+    print(json.dumps(engine.get_config(), indent=2))
+
+
+# -----------------------------------------------------------------------------
+# Guard: require Springa
+# ------------------------------------------------------------------------------
+
+def require_engine(engine: Optional[SpringaEngine]) -> SpringaEngine:
+    if engine is None:
+        raise RuntimeError("Springa not available. Install Springa.py and ensure it is importable.")
+    return engine
+
+
+# -----------------------------------------------------------------------------
+# Safe trigger (catch and print)
+# ------------------------------------------------------------------------------
+
+def safe_trigger(engine: SpringaEngine, position_id: str) -> bool:
+    try:
+        order = engine.check_and_trigger(position_id)
+        if order:
+            persist_engine(engine)
+            return True
+    except Exception as e:
+        print(f"Error: {e}")
+    return False
+
+
+# -----------------------------------------------------------------------------
+# Safe scan (catch and print)
+# ------------------------------------------------------------------------------
+
+def safe_scan(engine: SpringaEngine, caller: str) -> int:
+    try:
+        orders = engine.scan_all_positions(caller)
+        if orders:
+            persist_engine(engine)
+        return len(orders)
+    except Exception as e:
+        print(f"Error: {e}")
+        return 0
+
+
+# -----------------------------------------------------------------------------
+# App info dict
+# ------------------------------------------------------------------------------
+
+def get_app_info() -> Dict[str, Any]:
+    return {
+        "name": OWL_APP_NAME,
+        "version": OWL_VERSION,
+        "config_path": str(get_config_path()),
+        "state_path": str(get_state_path()),
+        "springa_version": get_springa_version(),
+    }
+
+
+def cmd_appinfo(args: List[str]) -> None:
+    print(json.dumps(get_app_info(), indent=2))
+
+
+# -----------------------------------------------------------------------------
+# Entry
+# ------------------------------------------------------------------------------
+
+def run() -> None:
+    main()
