@@ -1278,3 +1278,83 @@ def cmd_appinfo(args: List[str]) -> None:
 
 def run() -> None:
     main()
+
+
+def cli_entry() -> None:
+    run()
+
+
+# -----------------------------------------------------------------------------
+# Main (register byasset, counts, paths, setprices, whoami, mypositions, ordercount, backup, restore, healthshort, assets, status, positionjson, presets, configdump, engineconfig, appinfo)
+# ------------------------------------------------------------------------------
+
+
+def _main() -> None:
+    main()
+
+
+if __name__ == "__main__":
+    _main()
+
+def main() -> None:
+    engine = create_engine_from_config() if SpringaEngine else None
+    argv = sys.argv[1:]
+    if not argv:
+        cmd_help()
+        return
+    cmd = argv[0].lower()
+    args = argv[1:]
+
+    if cmd == "config":
+        cmd_config(args)
+    elif cmd == "position":
+        if not args:
+            print("Usage: position create|list|get ...")
+            return
+        sub = args[0].lower()
+        if sub == "create":
+            cmd_position_create(args[1:], engine)
+        elif sub == "list":
+            cmd_position_list(args[1:], engine)
+        elif sub == "get":
+            cmd_position_get(args[1:], engine)
+        else:
+            print("Unknown position subcommand.")
+    elif cmd == "trigger":
+        cmd_trigger(args, engine)
+    elif cmd == "scan":
+        cmd_scan(args, engine)
+    elif cmd == "stats":
+        cmd_stats(args, engine)
+    elif cmd == "health":
+        cmd_health(args, engine)
+    elif cmd == "orders":
+        cmd_orders(args, engine)
+    elif cmd == "whitelist":
+        cmd_whitelist(args, engine)
+    elif cmd == "price":
+        cmd_price(args, engine)
+    elif cmd == "disable":
+        cmd_disable(args, engine)
+    elif cmd == "enable":
+        cmd_enable(args, engine)
+    elif cmd == "near":
+        cmd_near(args, engine)
+    elif cmd == "export":
+        cmd_export(args, engine)
+    elif cmd == "import":
+        cmd_import(args, engine)
+    elif cmd == "preset":
+        cmd_preset(args, engine)
+    elif cmd == "report":
+        cmd_report(args, engine)
+    elif cmd == "updatehwm":
+        cmd_update_hwm(args, engine)
+    elif cmd == "batchtrigger":
+        cmd_batch_trigger(args, engine)
+    elif cmd == "audit":
+        cmd_audit(args, engine)
+    elif cmd == "watch":
+        cmd_watch(args, engine)
+    elif cmd == "validateaddress":
+        cmd_validate_address(args)
